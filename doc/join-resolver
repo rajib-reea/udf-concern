@@ -1,0 +1,39 @@
+High Level Architecture:
+========================
+
+Report Builder UI
+        ↓
+Report Definition
+        ↓
+Semantic Model (Join Graph)
+        ↓
+Join Resolver
+        ↓
+Query Planner
+        ↓
+SQL Generator
+        ↓
+Reporting DB
+
+Full Algorithm(Architect View):
+===============================
+
+receive report_definition
+
+entities = detect_entities()
+
+join_paths = resolve_paths(join_graph)
+
+validate_cardinality(join_paths)
+
+assign_aliases()
+
+build_join_sql()
+
+resolve_columns()
+
+build_select_where_group()
+
+inject_security_filters()
+
+execute_query()

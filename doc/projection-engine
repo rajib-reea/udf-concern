@@ -1,0 +1,48 @@
+Full Algorithm (Architect View):
+================================
+
+START WORKER
+
+loop forever:
+
+  events = read_change_events()
+
+  mark_entities_dirty(events)
+
+  metadata = load_udf_metadata()
+
+  sync_reporting_schema(metadata)
+
+  dirty_entities = fetch_dirty_entities()
+
+  for entity in dirty_entities:
+        base = load_entity(entity)
+        udfs = load_udf_values(entity)
+
+        row = flatten(base, udfs, metadata)
+
+        normalized_row = type_cast(row)
+
+        upsert_reporting(normalized_row)
+
+        mark_processed(entity)
+
+END LOOP
+
+Core Components:
+================
+1. Change Detector
+2. Metadata Loader
+3. Schema Manager
+4. Data Transformer
+5. Upsert Writer
+6. Sync Tracker
+
+Do we represent data this way?
+==============================
+{
+  "entity": "customer",
+  "source_table": "customer",
+  "udf_table": "entity_udf_values",
+  "reporting_table": "customer_reporting"
+}

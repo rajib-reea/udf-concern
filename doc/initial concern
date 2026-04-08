@@ -1,0 +1,73 @@
+                    ┌──────────────────────────┐
+                    │        Frontend UI        │
+                    │---------------------------│
+                    │ • Entity Screens          │
+                    │ • UDF Designer            │
+                    │ • Report Builder          │
+                    └─────────────┬────────────┘
+                                  │
+                                  ▼
+                    ┌──────────────────────────┐
+                    │      Application API      │
+                    │---------------------------│
+                    │ • Entity Service          │
+                    │ • UDF Service             │
+                    │ • Report Service          │
+                    └─────────────┬────────────┘
+                                  │
+          ┌───────────────────────┼────────────────────────┐
+          ▼                       ▼                        ▼
+
+┌──────────────────┐   ┌────────────────────┐   ┌─────────────────────┐
+│ Transaction DB   │   │  UDF Metadata DB   │   │ Event / Change Bus   │
+│ (Core Entities)  │   │--------------------│   │----------------------│
+│------------------│   │ udf_definition     │   │ Kafka / Queue        │
+│ customer         │   │ field_type         │   │ entity_updated       │
+│ invoice          │   │ validation_rules   │   │ udf_changed          │
+└─────────┬────────┘   └──────────┬─────────┘   └──────────┬──────────┘
+          │                       │                         │
+          └──────────────┬────────┴───────────────┬─────────┘
+                         ▼                        ▼
+
+              ┌────────────────────────────────────────┐
+              │        UDF Value Storage Layer          │
+              │-----------------------------------------│
+              │ entity_udf_values (EAV or JSONB)       │
+              │ entity_id                              │
+              │ field_id                               │
+              │ value                                  │
+              └─────────────────┬──────────────────────┘
+                                │
+                                ▼
+                ┌────────────────────────────────┐
+                │   Reporting Projection Engine   │
+                │---------------------------------│
+                │ • Flatten UDF data              │
+                │ • Schema materialization        │
+                │ • Type normalization            │
+                │ • Incremental sync              │
+                └───────────────┬─────────────────┘
+                                │
+                                ▼
+                ┌────────────────────────────────┐
+                │        Reporting Database       │
+                │---------------------------------│
+                │ customer_reporting              │
+                │ invoice_reporting               │
+                │ materialized views              │
+                └───────────────┬─────────────────┘
+                                │
+                                ▼
+                ┌────────────────────────────────┐
+                │        Reporting Engine         │
+                │---------------------------------│
+                │ • Metadata-driven queries       │
+                │ • Dynamic SQL builder           │
+                │ • Aggregation engine            │
+                │ • Export (Excel/PDF/API)        │
+                └───────────────┬─────────────────┘
+                                │
+                                ▼
+                      ┌────────────────────┐
+                      │ Report Builder UI  │
+                      └────────────────────┘

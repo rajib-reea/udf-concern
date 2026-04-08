@@ -1,0 +1,311 @@
+User should be able to:
+
+choose columns (including UDFs)
+filter dynamically
+group & aggregate
+sort
+export
+
+WITHOUT writing SQL.
+
+Example UI action:
+
+Columns: segment, risk_score
+Filter: risk_score > 70
+Group By: segment
+Aggregation: AVG(risk_score)
+
+Engine generates safe SQL automatically.
+
+🧠 Core Principle
+
+⚠️ NEVER allow users to generate SQL directly.
+
+Instead:
+
+User builds Report Definition (metadata) → Engine converts → SQL.
+
+🏗️ Architecture Overview
+Report Builder UI
+        ↓
+Report Definition (JSON)
+        ↓
+Query Validator
+        ↓
+Metadata Resolver
+        ↓
+SQL Generator
+        ↓
+Execution Engine
+        ↓
+Result Formatter
+✅ Step 1 — Report Definition Model
+
+User selections are stored as structured JSON.
+
+Example:
+
+{
+  "entity": "customer",
+  "columns": ["segment"],
+  "aggregations": [
+    {"field": "risk_score", "func": "AVG"}
+  ],
+  "filters": [
+    {"field": "risk_score", "op": ">", "value": 70}
+  ],
+  "group_by": ["segment"],
+  "sort": [{"field":"segment","dir":"ASC"}],
+  "limit": 100
+}
+
+This is the only input to query generation.
+
+✅ Step 2 — Metadata Registry (Safety Layer)
+
+Create table:
+
+reportable_fields
+-----------------
+field_name
+source_column
+data_type
+is_aggregatable
+is_filterable
+entity
+
+Example:
+
+field	column	type
+risk_score	risk_score	number
+segment	segment	text
+
+This prevents arbitrary SQL usage.
+
+✅ Step 3 — Validation Phase ⭐ (Most Important)
+
+Algorithm:
+
+Validate Fields
+for field in request:
+   ensure field exists in metadata
+
+Reject unknown fields.
+
+Validate Aggregations
+
+Example rules:
+
+Type	Allowed
+number	SUM, AVG
+text	COUNT only
+date	MIN, MAX
+Validate Operators
+
+Whitelist only:
+
+=  !=  >  <  >=  <=  IN  BETWEEN  LIKE
+
+Never allow raw SQL fragments.
+
+Validate Limits
+
+Prevent heavy queries:
+
+limit <= MAX_ALLOWED_ROWS
+group_by count <= 5
+✅ Step 4 — SQL Construction (Safe Builder)
+
+We DO NOT concatenate strings blindly.
+
+We build query parts.
+
+4.1 SELECT Clause
+
+Algorithm:
+
+select_parts = []
+
+Columns:
+
+select_parts += group_by fields
+
+Aggregations:
+
+select_parts += FUNC(column) AS alias
+
+Example result:
+
+SELECT segment, AVG(risk_score) AS avg_risk_score
+4.2 FROM Clause
+
+Always fixed:
+
+FROM customer_reporting
+
+User never controls this.
+
+4.3 WHERE Clause (Parameterized)
+
+⚠️ Always use bind parameters.
+
+Algorithm:
+
+WHERE risk_score > :p1
+
+Parameters:
+
+p1 = 70
+
+Never inline values.
+
+4.4 GROUP BY Clause
+
+Auto-generated:
+
+GROUP BY segment
+
+Only from validated fields.
+
+4.5 ORDER BY Clause
+
+Whitelist fields only:
+
+ORDER BY segment ASC
+4.6 LIMIT/OFFSET
+
+Controlled pagination:
+
+LIMIT 100 OFFSET 0
+✅ Step 5 — Final Generated Query
+
+Result:
+
+SELECT
+   segment,
+   AVG(risk_score) AS avg_risk_score
+FROM customer_reporting
+WHERE risk_score > $1
+GROUP BY segment
+ORDER BY segment ASC
+LIMIT 100;
+
+Parameters:
+
+[70]
+
+Safe. Fast. Predictable.
+
+✅ Step 6 — Execution Layer
+
+Execution rules:
+
+read-only DB connection
+timeout enforced
+memory limit enforced
+
+Example:
+
+query_timeout = 10 seconds
+✅ Step 7 — Result Formatting
+
+Engine converts SQL result → UI format:
+
+{
+  "columns": ["segment","avg_risk_score"],
+  "rows": [
+     ["gold",82.4],
+     ["silver",71.2]
+  ]
+}
+
+Supports:
+
+table view
+charts
+CSV export
+Excel export
+🔒 SQL Injection Protection Strategy
+
+You achieve safety via:
+
+Layer	Protection
+Metadata registry	whitelist columns
+Operator whitelist	restrict expressions
+Parameter binding	safe values
+Fixed FROM clause	no joins injection
+Aggregation rules	prevent misuse
+
+User NEVER touches SQL.
+
+⚡ Performance Controls (Enterprise Tricks)
+1️⃣ Query Complexity Scoring
+
+Before execution:
+
+score =
+  filters * 1 +
+  group_by * 5 +
+  aggregation * 3
+
+Reject if too complex.
+
+2️⃣ Auto Index Recommendation
+
+Track frequent queries:
+
+segment + risk_score
+
+Suggest index automatically.
+
+3️⃣ Result Cache
+
+Cache identical report definition hash:
+
+hash(report_json)
+
+Reuse results.
+
+4️⃣ Async Execution for Heavy Reports
+
+If estimated rows > threshold:
+
+run background job
+notify when ready
+🧩 Full Algorithm (Architect View)
+receive report_definition
+
+validate_definition()
+
+metadata = load_metadata()
+
+resolved_fields = resolve_columns(metadata)
+
+sql = build_select()
+sql += build_where(parameters)
+sql += build_group_by()
+sql += build_order()
+sql += build_limit()
+
+execute(sql, parameters)
+
+format_results()
+
+return response
+⭐ Golden Insight
+
+Your reporting system is essentially:
+
+A controlled SQL compiler
+
+User input → validated AST → SQL generation.
+
+This is EXACTLY how:
+
+Salesforce Reports
+Stripe Sigma
+Metabase
+Looker
+ERP reporting engines
+
+work internally.

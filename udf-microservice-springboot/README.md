@@ -9,7 +9,9 @@ The UDF (User Defined Fields) Microservice is a Spring Boot-based service design
 - **Dynamic Field Definition**: Create and manage custom fields for any entity type
 - **Field Types Support**: Text, Number, Date, Boolean, Dropdown, etc.
 - **Validation Rules**: Configurable validation for field values
-- **Value Storage**: Efficient storage of UDF values using EAV (Entity-Attribute-Value) or JSONB patterns
+- **Value Storage**: Efficient storage of UDF values using EAV (Entity-Attribute-Value) pattern
+- **Dynamic Reporting**: Generate SQL queries from JSON specifications using jOOQ
+- **Projection Engine**: Sync UDF data to reporting tables for efficient querying
 - **API Integration**: RESTful APIs for CRUD operations on UDF definitions and values
 - **Event Publishing**: Integration with event bus for real-time updates
 
@@ -81,12 +83,13 @@ The microservice follows a layered architecture:
 
 - **Framework**: Spring Boot 3.x
 - **Language**: Java 17+
-- **Database**: PostgreSQL (with JSONB support) or MySQL
+- **Database**: PostgreSQL (with JSONB support)
 - **ORM**: Spring Data JPA with Hibernate
+- **Dynamic SQL**: jOOQ 3.x
 - **Messaging**: Spring Cloud Stream with Kafka
 - **Documentation**: OpenAPI/Swagger
 - **Testing**: JUnit 5, Mockito, Testcontainers
-- **Build Tool**: Maven or Gradle
+- **Build Tool**: Maven
 
 ## Getting Started
 
@@ -118,19 +121,70 @@ spring:
 
 udf:
   storage:
-    strategy: jsonb  # or eav
-  kafka:
-    enabled: true
-    topic: udf-events
+    strategy: eav  # or jsonb
+  reporting:
+    sync:
+      enabled: true
 ```
 
-## API Documentation
+### Dynamic Reports
 
-See [API Documentation](api.md) for detailed endpoint specifications.
+```http
+POST /api/v1/reports/execute
+POST /api/v1/reports/export/{format}
+```
+
+Example report request:
+
+```json
+{
+  "entity": "customer",
+  "columns": ["segment"],
+  "aggregations": [
+    {"field": "risk_score", "func": "AVG"}
+  ],
+  "filters": [
+    {"field": "risk_score", "op": ">", "value": 70}
+  ],
+  "groupBy": ["segment"],
+  "sort": [{"field": "segment", "dir": "ASC"}],
+  "limit": 100
+}
+```
 
 ## Database Schema
 
-See [Database Schema](database.md) for table definitions and relationships.
+The service uses several key tables:
+
+- `field_type`: Supported field types and their validation rules
+- `udf_definition`: UDF field definitions
+- `entity_udf_values`: UDF values stored in EAV pattern
+- `reportable_fields`: Metadata for dynamic reporting
+
+## Dynamic Reporting
+
+The service provides a powerful dynamic reporting engine that:
+
+1. **Validates** report specifications against metadata
+2. **Generates** type-safe SQL using jOOQ
+3. **Executes** queries efficiently
+4. **Exports** results in multiple formats (JSON, CSV, Excel)
+
+### Safety Features
+
+- Field existence validation
+- Aggregation permission checks
+- Filter capability verification
+- SQL injection prevention through jOOQ
+
+## Projection Engine
+
+Automatically syncs UDF data to reporting tables:
+
+1. **Monitors** changes to UDF values
+2. **Flattens** entity data with UDF values
+3. **Type casts** values appropriately
+4. **Upserts** to reporting tables for fast queries
 
 ## Deployment
 

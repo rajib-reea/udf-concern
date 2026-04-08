@@ -11,6 +11,8 @@ The UDF (User Defined Fields) Microservice is a Spring Boot-based service design
 - **Validation Rules**: Configurable validation for field values
 - **Value Storage**: Efficient storage of UDF values using EAV (Entity-Attribute-Value) pattern
 - **Dynamic Reporting**: Generate SQL queries from JSON specifications using jOOQ
+- **Report Templates**: Persist report definitions and execute by template ID
+- **Visual Query Support**: UI-driven query builder payloads for report execution and export
 - **Projection Engine**: Sync UDF data to reporting tables for efficient querying
 - **API Integration**: RESTful APIs for CRUD operations on UDF definitions and values
 - **Event Publishing**: Integration with event bus for real-time updates
@@ -108,6 +110,8 @@ The microservice follows a layered architecture:
    mvn spring-boot:run
    ```
 
+> Note: `target/` directories are ignored by `.gitignore` to keep build artifacts out of version control.
+
 ### Configuration
 
 Key configuration properties:
@@ -132,6 +136,15 @@ udf:
 ```http
 POST /api/v1/reports/execute
 POST /api/v1/reports/export/{format}
+POST /api/v1/reports/execute/visual
+POST /api/v1/reports/export/visual/{format}
+POST /api/v1/reports/execute/template/{id}
+POST /api/v1/reports/export/template/{id}/{format}
+GET /api/v1/reports/definitions
+GET /api/v1/reports/definitions/{id}
+POST /api/v1/reports/definitions
+PUT /api/v1/reports/definitions/{id}
+DELETE /api/v1/reports/definitions/{id}
 ```
 
 Example report request:

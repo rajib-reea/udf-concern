@@ -27,7 +27,7 @@ public class DynamicReportService {
         validateReportDefinition(reportDef);
 
         // Create DSL context
-        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRESQL);
+        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         // Build the query
         SelectQuery<?> query = create.selectQuery();
@@ -188,35 +188,39 @@ public class DynamicReportService {
         query.addConditions(condition);
     }
 
+    @SuppressWarnings("unchecked")
     private Condition buildFilterCondition(Field<?> field, ReportDefinition.Filter filter) {
         Object value = filter.getValue();
+        Field<Object> objectField = (Field<Object>) field;
 
         switch (filter.getOp().toLowerCase()) {
             case "=":
             case "eq":
-                return field.eq(value);
+                return objectField.eq(DSL.val(value));
             case ">":
             case "gt":
-                return field.gt(value);
+                return objectField.gt(DSL.val(value));
             case "<":
             case "lt":
-                return field.lt(value);
+                return objectField.lt(DSL.val(value));
             case ">=":
             case "gte":
-                return field.ge(value);
+                return objectField.ge(DSL.val(value));
             case "<=":
             case "lte":
-                return field.le(value);
+                return objectField.le(DSL.val(value));
             case "!=":
             case "ne":
-                return field.ne(value);
+                return objectField.ne(DSL.val(value));
             case "like":
-                return field.like(value.toString());
+                return field.cast(String.class).like(value != null ? value.toString() : "");
             case "in":
                 if (value instanceof List) {
-                    return field.in((List<?>) value);
+                    return objectField.in((List<?>) value);
+                } else if (value != null && value.getClass().isArray()) {
+                    return objectField.in((Object[]) value);
                 } else {
-                    return field.in(value);
+                    return objectField.in(value);
                 }
             default:
                 throw new IllegalArgumentException("Unsupported filter operator: " + filter.getOp());

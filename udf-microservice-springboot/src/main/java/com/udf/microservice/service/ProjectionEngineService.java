@@ -32,7 +32,7 @@ public class ProjectionEngineService {
 
     @Async
     public void syncEntityToReporting(String entityType, Long entityId) {
-        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRESQL);
+        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         // Load base entity data (this would need to be implemented based on your entity structure)
         Map<String, Object> baseData = loadBaseEntityData(entityType, entityId);
@@ -61,7 +61,7 @@ public class ProjectionEngineService {
     private Map<String, Object> loadBaseEntityData(String entityType, Long entityId) {
         // This is a placeholder - you would implement this based on your actual entity structure
         // For example, if you have customer and invoice entities, you'd query those tables
-        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRESQL);
+        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         switch (entityType.toLowerCase()) {
             case "customer":
@@ -153,7 +153,7 @@ public class ProjectionEngineService {
 
         // For now, just mark all entities as needing sync
         // In a real implementation, you'd have a sync tracking table
-        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRESQL);
+        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         // Get all entity IDs that have UDF values
         List<Long> entityIds = entityUdfValueRepository.findByEntityTypeAndEntityIds(entityType, null)
@@ -168,7 +168,7 @@ public class ProjectionEngineService {
     }
 
     public void createReportingTable(String entityType) {
-        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRESQL);
+        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         String reportingTable = entityType + "_reporting";
 
@@ -185,7 +185,7 @@ public class ProjectionEngineService {
 
     public void updateReportingSchema(String entityType) {
         // Add new columns for UDF fields that don't exist yet
-        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRESQL);
+        DSLContext create = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         List<UdfDefinition> udfDefinitions = udfDefinitionRepository.findByEntityType(entityType);
         String reportingTable = entityType + "_reporting";

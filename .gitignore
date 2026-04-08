@@ -27,8 +27,8 @@ hs_err_pid*
 
 # Maven
 target/
+**/target/**
 !.mvn/wrapper/maven-wrapper.jar
-**/target/
 **/generated-sources/
 
 # Gradle
